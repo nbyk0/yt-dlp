@@ -129,6 +129,17 @@ class TVerIE(InfoExtractor):
         video_info = self._download_json(
             f'https://statics.tver.jp/content/episode/{video_id}.json', video_id, 'Downloading video info',
             query={'v': version}, headers={'Referer': 'https://tver.jp/'})
+        
+        project_id = traverse_obj(video_info, ('streaks', 'projectID'))
+        streaks_video_id = traverse_obj(video_info, ('streaks', 'videoRefID'))
+
+        streaks_video_info = self._download_json(
+            f'https://playback.api.streaks.jp/v1/projects/{project_id}/medias/ref:{streaks_video_id}', project_id,
+            streaks_video_id , 'Downloading video info', headers={'Origin': 'https://tver.jp','Referer': 'https://tver.jp/'})
+
+        m3u8_url = traverse_obj(streaks_video_info, ('sources', 0, 'src'))
+        formats = self._extract_m3u8_formats(m3u8_url, video_id)
+
         p_id = video_info['video']['accountID']
         r_id = traverse_obj(video_info, ('video', ('videoRefID', 'videoID')), get_all=False)
         if not r_id:
